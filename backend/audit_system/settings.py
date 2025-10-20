@@ -23,7 +23,6 @@ ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1').split(','
 
 INSTALLED_APPS = [
     'django.contrib.admin',
-    'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
@@ -34,11 +33,14 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt',
     'corsheaders',
     
-    # Local apps
+    # Local apps - DEBEN ESTAR AQUÍ
     'apps.authentication',
     'apps.companies',
     'apps.audits',
     'apps.dashboard',
+    
+    # Django auth DEBE estar DESPUÉS
+    'django.contrib.auth',
 ]
 
 MIDDLEWARE = [
@@ -234,3 +236,6 @@ if not DEBUG:
     SECURE_BROWSER_XSS_FILTER = True
     SECURE_CONTENT_TYPE_NOSNIFF = True
     X_FRAME_OPTIONS = 'DENY'
+    
+# Custom User Model
+AUTH_USER_MODEL = 'authentication.User'
