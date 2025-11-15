@@ -1,5 +1,6 @@
 """
 Modelos de autenticación
+Nota: Usamos Supabase como base de datos, estos modelos son solo para Django Admin
 """
 
 from django.db import models
@@ -38,6 +39,7 @@ class UserManager(BaseUserManager):
 class User(AbstractBaseUser, PermissionsMixin):
     """
     Modelo de usuario personalizado
+    Este modelo se sincroniza con Supabase
     """
     
     ROLE_CHOICES = [
@@ -60,20 +62,23 @@ class User(AbstractBaseUser, PermissionsMixin):
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='Fecha de Creación')
     updated_at = models.DateTimeField(auto_now=True, verbose_name='Fecha de Actualización')
     
-    # FIX: Agregar related_name para evitar conflictos
+    # Relaciones Many-to-Many con related_name personalizado para evitar conflictos
     groups = models.ManyToManyField(
         'auth.Group',
-        verbose_name='grupos',
+        verbose_name='groups',
         blank=True,
+        help_text='The groups this user belongs to. A user will get all permissions granted to each of their groups.',
         related_name='custom_user_set',
-        related_query_name='custom_user',
+        related_query_name='user',
     )
+    
     user_permissions = models.ManyToManyField(
         'auth.Permission',
-        verbose_name='permisos de usuario',
+        verbose_name='user permissions',
         blank=True,
+        help_text='Specific permissions for this user.',
         related_name='custom_user_set',
-        related_query_name='custom_user',
+        related_query_name='user',
     )
     
     objects = UserManager()
