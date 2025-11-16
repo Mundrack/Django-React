@@ -43,3 +43,14 @@ class Company(models.Model):
     
     def __str__(self):
         return f"{self.name} - RUC: {self.ruc}"
+class CompanyUser(models.Model):
+    """Relación entre usuarios y empresas"""
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='company_users')
+    user = models.ForeignKey('authentication.User', on_delete=models.CASCADE, related_name='user_companies')
+    
+    class Meta:
+        db_table = 'company_users'
+        unique_together = ('company', 'user')
+    
+    def __str__(self):
+        return f"{self.user.email} - {self.company.name}"

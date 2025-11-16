@@ -9,7 +9,31 @@ class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
     permission_classes = [AllowAny]
-
+    
+    def create(self, request, *args, **kwargs):
+        """Crear usuario y asignar empresa"""
+        company_id = request.data.get('company_id')
+        
+        # Crear usuario
+        user = User.objects.create(
+            email=request.data.get('email'),
+            full_name=request.data.get('full_name'),
+            role=request.data.get('role', 'company_user'),
+            is_active=True
+        )
+        
+        # Asignar empresa si se proporcionó
+        if company_id:
+            from companies.models import CompanyUser, Company
+            try:
+                company = Company.objects.get(id=company_id)
+                CompanyUser.objects.create(company=company, user=user)
+            except Company.DoesNotExist:
+                pass
+        
+        serializer = self.get_serializer(user)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+    
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def login_view(request):

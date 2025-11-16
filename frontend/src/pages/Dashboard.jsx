@@ -65,6 +65,15 @@ export default function Dashboard() {
             <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
               {getRoleName(user?.role)}
             </span>
+            {/* Solo SuperAdmin ve el botón de gestionar usuarios */}
+            {user?.role === 'super_admin' && (
+              <button
+                onClick={() => navigate('/users')}
+                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
+              >
+                Gestionar Usuarios
+              </button>
+            )}
             <button
               onClick={handleLogout}
               className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
