@@ -1,6 +1,0 @@
-#iniciar el back
-venv\Scripts\activate
-python manage.py runserver
-
-#front
-

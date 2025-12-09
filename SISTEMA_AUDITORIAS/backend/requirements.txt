@@ -1,0 +1,16 @@
+# Django y REST Framework
+Django==5.0.1
+djangorestframework==3.14.0
+djangorestframework-simplejwt==5.3.1
+django-cors-headers==4.3.1
+
+# Base de datos PostgreSQL (version compatible con Python 3.13)
+psycopg[binary]>=3.2.0
+
+# Utilidades
+python-dotenv==1.0.0
+python-dateutil==2.8.2
+
+# Excel y PDF
+openpyxl==3.1.2
+reportlab==4.0.8
