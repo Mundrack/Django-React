@@ -1,228 +1,174 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { ArrowLeft, FileText, Check } from 'lucide-react';
+import { Card, CardHeader, CardBody } from '../../components/common/Card';
+import Loading from '../../components/common/Loading';
 import { auditService } from '../../services/auditService';
-import { hierarchyService } from '../../services/hierarchyService';
-import { Card, CardBody, CardHeader } from '../../components/common/Card';
-import { LoadingPage } from '../../components/common/Loading';
-import Button from '../../components/common/Button';
-import Input, { Select, Textarea } from '../../components/common/Input';
-import { ArrowLeft, ArrowRight, Check } from 'lucide-react';
+import { companyService } from '../../services/companyService';
 
-const CreateAuditPage = () => {
+const CreateAuditPage = function() {
   const navigate = useNavigate();
-  const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [templates, setTemplates] = useState([]);
-  const [hierarchy, setHierarchy] = useState(null);
-  const [formData, setFormData] = useState({
-    name: '',
-    description: '',
-    template_id: '',
-    level_type: 'company',
-    level_id: '',
-    start_date: '',
-    end_date: '',
-  });
+  const [companies, setCompanies] = useState([]);
+  const [name, setName] = useState('');
+  const [templateId, setTemplateId] = useState('');
+  const [companyId, setCompanyId] = useState('');
+  const [description, setDescription] = useState('');
 
-  useEffect(() => {
-    loadData();
+  useEffect(function() {
+    fetchData();
   }, []);
 
-  const loadData = async () => {
+  var fetchData = async function() {
     try {
-      const [templatesRes, hierarchyRes] = await Promise.all([
-        auditService.getTemplates(),
-        hierarchyService.getTree(),
-      ]);
-      setTemplates(templatesRes.results || templatesRes);
-      setHierarchy(hierarchyRes);
-    } catch (err) {
-      console.error('Error loading data:', err);
-    } finally {
-      setLoading(false);
+      var templatesRes = await auditService.getTemplates();
+      var tData = templatesRes.data || templatesRes || [];
+      if (Array.isArray(tData)) {
+        setTemplates(tData);
+      } else {
+        setTemplates([]);
+      }
+
+      var companiesRes = await companyService.getCompanies();
+      var cData = companiesRes.data || companiesRes || [];
+      if (Array.isArray(cData)) {
+        setCompanies(cData);
+      } else {
+        setCompanies([]);
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      setTemplates([]);
+      setCompanies([]);
     }
+    setLoading(false);
   };
 
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+  var handleSubmit = async function(e) {
+    e.preventDefault();
+    if (!name || !templateId) {
+      alert('Completa nombre y plantilla');
+      return;
+    }
+    setSubmitting(true);
+    try {
+      var data = {
+        name: name,
+        template_id: templateId,
+        description: description
+      };
+      if (companyId) {
+        data.target_id = companyId;
+        data.target_type = 'company';
+      }
+      var res = await auditService.createAudit(data);
+      var newAudit = res.data || res;
+      navigate('/audits/' + newAudit.id);
+    } catch (error) {
+      console.error('Error:', error);
+      alert('Error al crear');
+    }
+    setSubmitting(false);
   };
 
-  const getLevelOptions = () => {
-    if (!hierarchy) return [];
-    
-    const options = [];
-    const { level_type } = formData;
-    
-    if (level_type === 'company') {
-      hierarchy.companies?.forEach(c => options.push({ value: c.id, label: c.name }));
-    } else if (level_type === 'branch') {
-      hierarchy.companies?.forEach(c => 
-        c.branches?.forEach(b => options.push({ value: b.id, label: `${c.name} > ${b.name}` }))
-      );
-    } else if (level_type === 'department') {
-      hierarchy.companies?.forEach(c => 
-        c.branches?.forEach(b => 
-          b.departments?.forEach(d => options.push({ value: d.id, label: `${b.name} > ${d.name}` }))
+  if (loading) {
+    return React.createElement(Loading, null);
+  }
+
+  var templateArray = [];
+  if (templates && Array.isArray(templates)) {
+    templateArray = templates;
+  }
+
+  var companyArray = [];
+  if (companies && Array.isArray(companies)) {
+    companyArray = companies;
+  }
+
+  return React.createElement('div', { className: 'space-y-6' },
+    React.createElement('div', { className: 'flex items-center gap-4' },
+      React.createElement('button', {
+        onClick: function() { navigate('/audits'); },
+        className: 'p-2 hover:bg-gray-700 rounded-lg'
+      }, React.createElement(ArrowLeft, { className: 'w-5 h-5 text-gray-400' })),
+      React.createElement('div', null,
+        React.createElement('h1', { className: 'text-2xl font-bold text-white' }, 'Nueva Auditoria'),
+        React.createElement('p', { className: 'text-gray-400' }, 'Crea una nueva auditoria')
+      )
+    ),
+    React.createElement('form', { onSubmit: handleSubmit },
+      React.createElement(Card, null,
+        React.createElement(CardHeader, null,
+          React.createElement('h2', { className: 'text-lg font-semibold text-white' }, 'Informacion')
+        ),
+        React.createElement(CardBody, null,
+          React.createElement('div', { className: 'space-y-4' },
+            React.createElement('div', null,
+              React.createElement('label', { className: 'block text-sm font-medium text-gray-300 mb-2' }, 'Nombre *'),
+              React.createElement('input', {
+                type: 'text',
+                value: name,
+                onChange: function(e) { setName(e.target.value); },
+                className: 'w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white',
+                placeholder: 'Nombre de la auditoria',
+                required: true
+              })
+            ),
+            React.createElement('div', null,
+              React.createElement('label', { className: 'block text-sm font-medium text-gray-300 mb-2' }, 'Descripcion'),
+              React.createElement('textarea', {
+                value: description,
+                onChange: function(e) { setDescription(e.target.value); },
+                className: 'w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white',
+                rows: 3,
+                placeholder: 'Descripcion opcional'
+              })
+            ),
+            React.createElement('div', null,
+              React.createElement('label', { className: 'block text-sm font-medium text-gray-300 mb-2' }, 'Plantilla *'),
+              React.createElement('select', {
+                value: templateId,
+                onChange: function(e) { setTemplateId(e.target.value); },
+                className: 'w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white',
+                required: true
+              },
+                React.createElement('option', { value: '' }, 'Seleccionar plantilla'),
+                templateArray.map(function(t) {
+                  return React.createElement('option', { key: t.id, value: t.id }, t.name);
+                })
+              )
+            ),
+            React.createElement('div', null,
+              React.createElement('label', { className: 'block text-sm font-medium text-gray-300 mb-2' }, 'Empresa (Opcional)'),
+              React.createElement('select', {
+                value: companyId,
+                onChange: function(e) { setCompanyId(e.target.value); },
+                className: 'w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white'
+              },
+                React.createElement('option', { value: '' }, 'Seleccionar empresa'),
+                companyArray.map(function(c) {
+                  return React.createElement('option', { key: c.id, value: c.id }, c.name);
+                })
+              )
+            )
+          )
         )
-      );
-    }
-    
-    return options;
-  };
-
-  const handleSubmit = async () => {
-    setSaving(true);
-    try {
-      const audit = await auditService.createAudit(formData);
-      navigate(`/audits/${audit.id}`);
-    } catch (err) {
-      console.error('Error creating audit:', err);
-      alert('Error al crear la auditoría');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  if (loading) return <LoadingPage />;
-
-  return (
-    <div className="max-w-2xl mx-auto space-y-6">
-      <div className="flex items-center gap-4">
-        <button onClick={() => navigate('/audits')} className="p-2 hover:bg-gray-100 rounded-lg">
-          <ArrowLeft size={20} />
-        </button>
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Nueva Auditoría</h1>
-          <p className="text-gray-500">Paso {step} de 3</p>
-        </div>
-      </div>
-
-      {/* Progress */}
-      <div className="flex gap-2">
-        {[1, 2, 3].map((s) => (
-          <div key={s} className={`flex-1 h-2 rounded-full ${s <= step ? 'bg-primary-600' : 'bg-gray-200'}`} />
-        ))}
-      </div>
-
-      <Card>
-        <CardBody className="space-y-6">
-          {step === 1 && (
-            <>
-              <h2 className="text-lg font-semibold">Seleccionar Plantilla</h2>
-              <div className="space-y-3">
-                {templates.map((template) => (
-                  <div
-                    key={template.id}
-                    onClick={() => setFormData({ ...formData, template_id: template.id })}
-                    className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
-                      formData.template_id === template.id
-                        ? 'border-primary-500 bg-primary-50'
-                        : 'border-gray-200 hover:border-gray-300'
-                    }`}
-                  >
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h3 className="font-medium text-gray-900">{template.name}</h3>
-                        <p className="text-sm text-gray-500">{template.description}</p>
-                        <p className="text-xs text-gray-400 mt-1">
-                          {template.total_sections} secciones • {template.total_questions} preguntas
-                        </p>
-                      </div>
-                      {formData.template_id === template.id && (
-                        <Check className="text-primary-600" size={24} />
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </>
-          )}
-
-          {step === 2 && (
-            <>
-              <h2 className="text-lg font-semibold">Nivel de la Auditoría</h2>
-              <Select
-                label="Tipo de nivel"
-                name="level_type"
-                value={formData.level_type}
-                onChange={handleChange}
-                options={[
-                  { value: 'company', label: 'Empresa' },
-                  { value: 'branch', label: 'Sucursal' },
-                  { value: 'department', label: 'Departamento' },
-                ]}
-              />
-              <Select
-                label="Seleccionar"
-                name="level_id"
-                value={formData.level_id}
-                onChange={handleChange}
-                options={[{ value: '', label: 'Seleccionar...' }, ...getLevelOptions()]}
-              />
-            </>
-          )}
-
-          {step === 3 && (
-            <>
-              <h2 className="text-lg font-semibold">Detalles de la Auditoría</h2>
-              <Input
-                label="Nombre de la auditoría"
-                name="name"
-                value={formData.name}
-                onChange={handleChange}
-                placeholder="Ej: Auditoría Q4 2025"
-                required
-              />
-              <Textarea
-                label="Descripción (opcional)"
-                name="description"
-                value={formData.description}
-                onChange={handleChange}
-                rows={3}
-              />
-              <div className="grid grid-cols-2 gap-4">
-                <Input
-                  label="Fecha inicio"
-                  type="date"
-                  name="start_date"
-                  value={formData.start_date}
-                  onChange={handleChange}
-                />
-                <Input
-                  label="Fecha fin"
-                  type="date"
-                  name="end_date"
-                  value={formData.end_date}
-                  onChange={handleChange}
-                />
-              </div>
-            </>
-          )}
-
-          <div className="flex justify-between pt-4">
-            {step > 1 ? (
-              <Button variant="secondary" onClick={() => setStep(step - 1)}>
-                <ArrowLeft size={20} /> Anterior
-              </Button>
-            ) : <div />}
-            
-            {step < 3 ? (
-              <Button 
-                onClick={() => setStep(step + 1)}
-                disabled={step === 1 && !formData.template_id || step === 2 && !formData.level_id}
-              >
-                Siguiente <ArrowRight size={20} />
-              </Button>
-            ) : (
-              <Button onClick={handleSubmit} loading={saving} disabled={!formData.name}>
-                Crear Auditoría
-              </Button>
-            )}
-          </div>
-        </CardBody>
-      </Card>
-    </div>
+      ),
+      React.createElement('div', { className: 'flex justify-end gap-4 mt-6' },
+        React.createElement('button', {
+          type: 'button',
+          onClick: function() { navigate('/audits'); },
+          className: 'px-6 py-3 bg-gray-700 text-white rounded-lg hover:bg-gray-600'
+        }, 'Cancelar'),
+        React.createElement('button', {
+          type: 'submit',
+          disabled: submitting,
+          className: 'px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700'
+        }, submitting ? 'Creando...' : 'Crear Auditoria')
+      )
+    )
   );
 };
 
